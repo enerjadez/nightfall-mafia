@@ -1,12 +1,36 @@
 # Nightfall
 
-A text-based social deduction **Mafia / Impostor** game designed for group chats (Discord, WhatsApp, Telegram, or Grok).
+A text-based social deduction **Mafia / Impostor** game designed for group chats **and** a fully playable browser version.
 
 Friends get secretly assigned as either **Mafia** or **Town**, then eliminate each other through discussion, accusations, and voting — with built-in conversation topics to keep the game fun and lively.
 
 ---
 
-## How to Start a Game
+## 🎮 Playable Web Version (HTML + CSS + JS)
+
+A complete single-file interactive Game Master tool is included:
+
+**[Open index.html](https://github.com/enerjadez/nightfall-mafia/blob/main/index.html)** (or enable GitHub Pages and open the live site)
+
+### Features of the web app:
+- Add / remove players
+- Configure number of Mafia + Detective / Doctor
+- Secret role reveal mode (one player at a time)
+- Full Night phase (kill / investigate / protect)
+- Day phase with random discussion prompts
+- Voting system with tally
+- Automatic win detection
+- Beautiful dark atmospheric styling
+- Game log and status tracking
+
+**How to use:**
+1. Download or open `index.html` in any modern browser
+2. Or enable GitHub Pages (Settings → Pages → Deploy from main branch) for a live URL
+3. Host runs the page, shares screen or relays info to friends
+
+---
+
+## How to Start a Game (Text / Chat version)
 
 1. List your friends (example):
    `Players: Jade, Alex, Sam, Taylor, Jordan, Riley, Casey`
@@ -74,7 +98,7 @@ Every Day phase the host provides fresh prompts so the chat stays lively. Exampl
 
 ## How the Host Runs It
 
-The host (or Grok) acts as full Game Master:
+The host (or Grok / the HTML app) acts as full Game Master:
 - Tracks living players and secret roles
 - Collects night actions privately
 - Posts discussion prompts
