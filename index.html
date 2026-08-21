@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nightfall — Mafia Game</title>
+  <style>
+    :root {
+      --bg: #07070f;
+      --card: #12121c;
+      --card-hover: #1a1a28;
+      --accent: #8b5cf6;
+      --accent2: #a78bfa;
+      --mafia: #ef4444;
+      --town: #22c55e;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --border: #2a2a3a;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: radial-gradient(ellipse at top, #1a1025 0%, var(--bg) 60%);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      padding: 16px;
+      line-height: 1.5;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    header {
+      text-align: center;
+      padding: 24px 0 16px;
+    }
+    h1 {
+      font-size: 2.8rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #c4b5fd, #8b5cf6, #ef4444);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -1px;
+    }
+    .subtitle { color: var(--muted); font-size: 1.05rem; margin-top: 4px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+    }
+    h2 { font-size: 1.3rem; margin-bottom: 12px; color: var(--accent2); }
+    input[type="text"], select, input[type="number"] {
+      background: #0d0d18;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 1rem;
+      width: 100%;
+      outline: none;
+    }
+    input:focus, select:focus { border-color: var(--accent); }
+    button {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    button:hover { background: var(--accent2); transform: translateY(-1px); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    button.danger { background: var(--mafia); }
+    button.danger:hover { background: #f87171; }
+    button.secondary { background: #334155; }
+    button.secondary:hover { background: #475569; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .player-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #1e1e2e;
+      padding: 6px 12px;
+      border-radius: 999px;
+      margin: 4px;
+      font-size: 0.95rem;
+    }
+    .player-chip button {
+      background: transparent;
+      color: var(--muted);
+      padding: 0 4px;
+      font-size: 1.1rem;
+    }
+    .player-chip.dead { opacity: 0.45; text-decoration: line-through; }
+    .player-chip.mafia { border: 1px solid var(--mafia); }
+    #game { display: none; }
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 16px;
+      font-size: 0.95rem;
+    }
+    .badge {
+      background: #1e1e2e;
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+    }
+    .phase-night { border-color: #6366f1; color: #a5b4fc; }
+    .phase-day { border-color: #f59e0b; color: #fcd34d; }
+    .log {
+      max-height: 220px;
+      overflow-y: auto;
+      background: #0d0d18;
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 0.9rem;
+      border: 1px solid var(--border);
+    }
+    .log p { margin-bottom: 6px; color: var(--muted); }
+    .log .important { color: var(--text); font-weight: 500; }
+    .prompt-box {
+      background: linear-gradient(135deg, #1e1b4b, #312e81);
+      border: 1px solid #4c1d95;
+      border-radius: 14px;
+      padding: 18px;
+      text-align: center;
+      font-size: 1.15rem;
+      margin: 12px 0;
+    }
+    .controls { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+    .hidden { display: none !important; }
+    .role-reveal {
+      background: #1e1b4b;
+      border: 2px solid var(--accent);
+      border-radius: 14px;
+      padding: 24px;
+      text-align: center;
+      margin: 16px 0;
+    }
+    .role-name { font-size: 1.8rem; font-weight: 700; margin: 8px 0; }
+    .mafia-role { color: var(--mafia); }
+    .town-role { color: var(--town); }
+    footer { text-align: center; color: var(--muted); font-size: 0.85rem; margin-top: 30px; }
+    @media (max-width: 600px) {
+      h1 { font-size: 2.1rem; }
+      .row { flex-direction: column; align-items: stretch; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Nightfall</h1>
+      <p class="subtitle">Text-based Mafia / Social Deduction Game</p>
+    </header>
+
+    <!-- SETUP -->
+    <section id="setup" class="card">
+      <h2>Setup Game</h2>
+      <div class="row" style="margin-bottom:12px">
+        <input type="text" id="playerName" placeholder="Enter player name" style="flex:1">
+        <button onclick="addPlayer()">Add Player</button>
+      </div>
+      <div id="playerList" style="min-height:40px;margin-bottom:16px"></div>
+
+      <div class="row" style="margin-bottom:12px">
+        <label>Mafia count:
+          <input type="number" id="mafiaCount" min="1" max="6" value="2" style="width:70px;margin-left:8px">
+        </label>
+        <label style="margin-left:16px">
+          <input type="checkbox" id="useDetective" checked> Detective
+        </label>
+        <label style="margin-left:12px">
+          <input type="checkbox" id="useDoctor" checked> Doctor
+        </label>
+      </div>
+      <button onclick="startGame()" id="startBtn" disabled>Start Nightfall</button>
+    </section>
+
+    <!-- GAME -->
+    <section id="game">
+      <div class="status-bar">
+        <span class="badge" id="phaseBadge">Night 1</span>
+        <span class="badge" id="aliveBadge">Alive: 0</span>
+        <span class="badge" id="roundBadge">Round 1</span>
+      </div>
+
+      <div class="card">
+        <h2>Players</h2>
+        <div id="gamePlayers"></div>
+      </div>
+
+      <div class="card" id="actionPanel">
+        <h2 id="actionTitle">Night Phase</h2>
+        <div id="actionContent"></div>
+      </div>
+
+      <div class="card">
+        <h2>Game Log</h2>
+        <div class="log" id="log"></div>
+      </div>
+
+      <div class="controls">
+        <button class="secondary" onclick="resetGame()">New Game</button>
+      </div>
+    </section>
+
+    <footer>Designed with Grok · Open locally or via GitHub Pages</footer>
+  </div>
+
+  <script>
+    // ========== STATE ==========
+    let state = {
+      players: [],
+      phase: 'setup',
+      round: 1,
+      nightActions: { kill: null, investigate: null, protect: null },
+      votes: {},
+      log: []
+    };
+
+    const PROMPTS = [
+      "Give your best alibi for last night — what were you doing?",
+      "Who currently has the most suspicious energy and why?",
+      "If you had to vote someone out right now based only on vibes, who would it be?",
+      "Share one observation about another player that makes you slightly distrust them.",
+      "What’s one true fact and one lie about yourself? Everyone else guesses which is which.",
+      "Who has been the quietest so far, and is that suspicious?",
+      "Defend the player you trust the most right now.",
+      "If you were Mafia, who would you pretend to suspect?",
+      "Point out one contradiction you’ve noticed in someone’s story.",
+      "Who would make the best detective and why?",
+      "Describe the perfect Town player in this group.",
+      "What’s the riskiest accusation you can make right now?",
+      "Who do you think the Mafia would want to kill next?",
+      "Share a completely made-up but believable story about last night.",
+      "If this village had a mayor, who would it be — and are they trustworthy?"
+    ];
+
+    // ========== SETUP ==========
+    function addPlayer() {
+      const input = document.getElementById('playerName');
+      const name = input.value.trim();
+      if (!name) return;
+      if (state.players.some(p => p.name.toLowerCase() === name.toLowerCase())) {
+        alert('Player already added');
+        return;
+      }
+      state.players.push({ name, role: null, alive: true, isMafia: false });
+      input.value = '';
+      renderPlayerList();
+      document.getElementById('startBtn').disabled = state.players.length < 4;
+    }
+
+    function removePlayer(index) {
+      state.players.splice(index, 1);
+      renderPlayerList();
+      document.getElementById('startBtn').disabled = state.players.length < 4;
+    }
+
+    function renderPlayerList() {
+      const list = document.getElementById('playerList');
+      list.innerHTML = state.players.map((p, i) =>
+        `<span class="player-chip">${p.name} <button onclick="removePlayer(${i})">×</button></span>`
+      ).join('');
+    }
+
+    document.getElementById('playerName').addEventListener('keypress', e => {
+      if (e.key === 'Enter') addPlayer();
+    });
+
+    // ========== START ==========
+    function startGame() {
+      if (state.players.length < 4) {
+        alert('Need at least 4 players');
+        return;
+      }
+      const mafiaCount = parseInt(document.getElementById('mafiaCount').value) || 1;
+      const useDetective = document.getElementById('useDetective').checked;
+      const useDoctor = document.getElementById('useDoctor').checked;
+
+      // Assign roles
+      let roles = [];
+      for (let i = 0; i < mafiaCount; i++) roles.push('Mafia');
+      if (useDetective) roles.push('Detective');
+      if (useDoctor) roles.push('Doctor');
+      while (roles.length < state.players.length) roles.push('Villager');
+
+      // Shuffle
+      for (let i = roles.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [roles[i], roles[j]] = [roles[j], roles[i]];
+      }
+
+      state.players.forEach((p, i) => {
+        p.role = roles[i];
+        p.isMafia = roles[i] === 'Mafia';
+        p.alive = true;
+      });
+
+      state.phase = 'roles';
+      state.round = 1;
+      state.log = [];
+      log('Game started! Roles have been assigned secretly.');
+
+      document.getElementById('setup').style.display = 'none';
+      document.getElementById('game').style.display = 'block';
+      showRoleReveal();
+    }
+
+    // ========== ROLE REVEAL ==========
+    function showRoleReveal() {
+      const panel = document.getElementById('actionPanel');
+      document.getElementById('actionTitle').textContent = 'Secret Role Assignment';
+      let html = `<p style="margin-bottom:12px;color:var(--muted)">Host: pass the device or look away while each player views their role.</p>`;
+      state.players.forEach((p, i) => {
+        html += `<button class="secondary" style="margin:4px" onclick="revealRole(${i})">Show ${p.name}'s role</button>`;
+      });
+      html += `<div id="roleDisplay" class="role-reveal hidden"></div>`;
+      html += `<div class="controls" style="margin-top:16px"><button onclick="beginNight()">All roles revealed — Start Night 1</button></div>`;
+      document.getElementById('actionContent').innerHTML = html;
+      updateStatus();
+      renderGamePlayers();
+    }
+
+    function revealRole(index) {
+      const p = state.players[index];
+      const display = document.getElementById('roleDisplay');
+      display.classList.remove('hidden');
+      const isMafia = p.role === 'Mafia';
+      display.innerHTML = `
+        <p>${p.name}, your role is:</p>
+        <div class="role-name ${isMafia ? 'mafia-role' : 'town-role'}">${p.role}</div>
+        <p style="color:var(--muted);font-size:0.9rem">${isMafia ? 'You know the other Mafia. Eliminate the Town!' : 'Find and vote out the Mafia.'}</p>
+        <button class="secondary" onclick="document.getElementById('roleDisplay').classList.add('hidden')">Hide</button>
+      `;
+    }
+
+    // ========== NIGHT ==========
+    function beginNight() {
+      state.phase = 'night';
+      state.nightActions = { kill: null, investigate: null, protect: null };
+      document.getElementById('actionTitle').textContent = `Night ${state.round}`;
+      updateStatus();
+
+      const alive = state.players.filter(p => p.alive);
+      const mafiaAlive = alive.filter(p => p.isMafia);
+      const hasDetective = state.players.some(p => p.role === 'Detective' && p.alive);
+      const hasDoctor = state.players.some(p => p.role === 'Doctor' && p.alive);
+
+      let html = `<p style="margin-bottom:12px">Mafia, Detective and Doctor — choose your actions (host inputs secretly).</p>`;
+
+      // Kill
+      html += `<label>Mafia kill target:<br><select id="killSelect"><option value="">-- choose --</option>`;
+      alive.filter(p => !p.isMafia).forEach(p => {
+        html += `<option value="${p.name}">${p.name}</option>`;
+      });
+      html += `</select></label><br><br>`;
+
+      if (hasDetective) {
+        html += `<label>Detective investigates:<br><select id="investSelect"><option value="">-- choose --</option>`;
+        alive.forEach(p => { html += `<option value="${p.name}">${p.name}</option>`; });
+        html += `</select></label><br><br>`;
+      }
+
+      if (hasDoctor) {
+        html += `<label>Doctor protects:<br><select id="protectSelect"><option value="">-- choose --</option>`;
+        alive.forEach(p => { html += `<option value="${p.name}">${p.name}</option>`; });
+        html += `</select></label><br><br>`;
+      }
+
+      html += `<button onclick="resolveNight()">Resolve Night</button>`;
+      document.getElementById('actionContent').innerHTML = html;
+      log(`Night ${state.round} begins. The village sleeps...`);
+    }
+
+    function resolveNight() {
+      const killName = document.getElementById('killSelect')?.value;
+      const investName = document.getElementById('investSelect')?.value;
+      const protectName = document.getElementById('protectSelect')?.value;
+
+      let death = null;
+      if (killName && killName !== protectName) {
+        const victim = state.players.find(p => p.name === killName);
+        if (victim && victim.alive) {
+          victim.alive = false;
+          death = victim;
+        }
+      }
+
+      // Investigation result (shown only to host / Detective)
+      let investResult = '';
+      if (investName) {
+        const target = state.players.find(p => p.name === investName);
+        investResult = target ? (target.isMafia ? 'Mafia' : 'Not Mafia') : '';
+        log(`Detective investigated ${investName}: ${investResult} (tell the Detective privately)`, true);
+      }
+
+      if (death) {
+        log(`${death.name} was found dead in the morning. They were a ${death.role}.`, true);
+      } else {
+        log(`It was a peaceful night. No one died.`, true);
+      }
+
+      renderGamePlayers();
+      if (checkWin()) return;
+      beginDay();
+    }
+
+    // ========== DAY ==========
+    function beginDay() {
+      state.phase = 'day';
+      state.votes = {};
+      document.getElementById('actionTitle').textContent = `Day ${state.round}`;
+      updateStatus();
+
+      const prompt = PROMPTS[Math.floor(Math.random() * PROMPTS.length)];
+      let html = `
+        <div class="prompt-box">💬 ${prompt}</div>
+        <p style="margin:12px 0;color:var(--muted)">Discuss freely, then start voting when ready.</p>
+        <button onclick="startVoting()">Start Voting</button>
+      `;
+      document.getElementById('actionContent').innerHTML = html;
+      log(`Day ${state.round} begins. Discussion time.`);
+    }
+
+    function startVoting() {
+      const alive = state.players.filter(p => p.alive);
+      let html = `<p>Select who to eliminate (majority of living players):</p><div style="margin:12px 0">`;
+      alive.forEach(p => {
+        html += `<button class="secondary" style="margin:4px" onclick="castVote('${p.name}')">Vote ${p.name}</button>`;
+      });
+      html += `</div><div id="voteTally" style="margin:12px 0;color:var(--muted)">Votes: none yet</div>`;
+      html += `<button onclick="resolveVote()">Confirm Elimination</button>`;
+      document.getElementById('actionContent').innerHTML = html;
+    }
+
+    function castVote(name) {
+      // Simple: each click adds a vote (host can click multiple times or track manually)
+      // For better UX we just track last click per "voter" but keep simple majority by count
+      state.votes[name] = (state.votes[name] || 0) + 1;
+      const tally = Object.entries(state.votes).map(([n, c]) => `${n}: ${c}`).join(', ');
+      document.getElementById('voteTally').textContent = `Votes: ${tally}`;
+    }
+
+    function resolveVote() {
+      const entries = Object.entries(state.votes);
+      if (entries.length === 0) {
+        alert('No votes cast');
+        return;
+      }
+      entries.sort((a, b) => b[1] - a[1]);
+      const [eliminatedName, count] = entries[0];
+      const eliminated = state.players.find(p => p.name === eliminatedName);
+      if (!eliminated || !eliminated.alive) return;
+
+      eliminated.alive = false;
+      log(`${eliminated.name} was voted out. They were a ${eliminated.role}. Last words?`, true);
+      renderGamePlayers();
+
+      if (checkWin()) return;
+
+      state.round++;
+      beginNight();
+    }
+
+    // ========== WIN ==========
+    function checkWin() {
+      const alive = state.players.filter(p => p.alive);
+      const mafiaAlive = alive.filter(p => p.isMafia).length;
+      const townAlive = alive.length - mafiaAlive;
+
+      if (mafiaAlive === 0) {
+        endGame('Town wins! All Mafia have been eliminated.');
+        return true;
+      }
+      if (mafiaAlive >= townAlive) {
+        endGame('Mafia wins! They now equal or outnumber the Town.');
+        return true;
+      }
+      return false;
+    }
+
+    function endGame(message) {
+      state.phase = 'end';
+      document.getElementById('actionTitle').textContent = 'Game Over';
+      document.getElementById('actionContent').innerHTML = `
+        <div class="prompt-box" style="font-size:1.4rem">${message}</div>
+        <p style="margin-top:12px">Final roles:</p>
+        <ul style="margin:8px 0 16px 20px">
+          ${state.players.map(p => `<li>${p.name}: <strong>${p.role}</strong> ${p.alive ? '' : '(eliminated)'}</li>`).join('')}
+        </ul>
+        <button onclick="resetGame()">Play Again</button>
+      `;
+      log(message, true);
+      updateStatus();
+    }
+
+    // ========== HELPERS ==========
+    function log(msg, important = false) {
+      state.log.unshift({ msg, important });
+      const el = document.getElementById('log');
+      el.innerHTML = state.log.map(l =>
+        `<p class="${l.important ? 'important' : ''}">${l.msg}</p>`
+      ).join('');
+    }
+
+    function updateStatus() {
+      const alive = state.players.filter(p => p.alive).length;
+      document.getElementById('aliveBadge').textContent = `Alive: ${alive}`;
+      document.getElementById('roundBadge').textContent = `Round ${state.round}`;
+      const badge = document.getElementById('phaseBadge');
+      if (state.phase === 'night') {
+        badge.textContent = `Night ${state.round}`;
+        badge.className = 'badge phase-night';
+      } else if (state.phase === 'day') {
+        badge.textContent = `Day ${state.round}`;
+        badge.className = 'badge phase-day';
+      } else {
+        badge.textContent = state.phase;
+        badge.className = 'badge';
+      }
+    }
+
+    function renderGamePlayers() {
+      const el = document.getElementById('gamePlayers');
+      el.innerHTML = state.players.map(p => {
+        const cls = `player-chip ${p.alive ? '' : 'dead'} ${p.isMafia && state.phase === 'end' ? 'mafia' : ''}`;
+        return `<span class="${cls}">${p.name}${p.alive ? '' : ' ✕'}</span>`;
+      }).join('');
+    }
+
+    function resetGame() {
+      state = { players: [], phase: 'setup', round: 1, nightActions: {}, votes: {}, log: [] };
+      document.getElementById('setup').style.display = 'block';
+      document.getElementById('game').style.display = 'none';
+      document.getElementById('playerList').innerHTML = '';
+      document.getElementById('startBtn').disabled = true;
+      document.getElementById('mafiaCount').value = 2;
+    }
+  </script>
+</body>
+</html>
